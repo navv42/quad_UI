@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { 
   Vector3 as ThreeVector3, 
@@ -115,7 +115,7 @@ export function Quadcopter({
     gl.domElement.setPointerCapture(event.pointerId);
   };
   
-  const handlePointerMove = (event: PointerEvent) => {
+  const handlePointerMove = useCallback((event: PointerEvent) => {
     if (!isDragging || !groupRef.current || !isInteractive) return;
     
     const mouse = new Vector2(
@@ -160,9 +160,9 @@ export function Quadcopter({
         ]
       });
     }
-  };
+  }, [isDragging, dragMode, isInteractive, size, camera, onUpdate]);
   
-  const handlePointerUp = (event: PointerEvent) => {
+  const handlePointerUp = useCallback((event: PointerEvent) => {
     if (!isDragging) return;
     
     setIsDragging(false);
@@ -170,7 +170,7 @@ export function Quadcopter({
     
     // Release pointer capture
     gl.domElement.releasePointerCapture(event.pointerId);
-  };
+  }, [isDragging, onDragEnd, gl]);
   
   // Set up global pointer move and up handlers
   useEffect(() => {
@@ -191,7 +191,7 @@ export function Quadcopter({
         window.removeEventListener('pointerup', handleGlobalPointerUp);
       };
     }
-  }, [isDragging, dragMode]);
+  }, [isDragging, handlePointerMove, handlePointerUp]);
   
   // Update cursor based on hover
   useEffect(() => {
@@ -213,7 +213,7 @@ export function Quadcopter({
       timeRef.current = 0;
       onUpdate({ currentFrame: 0 });
     }
-  }, [state.trajectory]);
+  }, [state.trajectory, onUpdate]);
   
   // Handle play/pause state changes
   useEffect(() => {

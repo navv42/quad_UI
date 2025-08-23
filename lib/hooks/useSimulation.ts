@@ -60,14 +60,14 @@ export function useSimulation(options: UseSimulationOptions = {}): UseSimulation
     
     try {
       if (!controllerRef.current) {
-        controllerRef.current = new SimulationController();
+        controllerRef.current = new SimulationController(
+          modelPath,
+          normalizerPath,
+          referenceDataPath
+        );
       }
       
-      await controllerRef.current.initialize(
-        modelPath,
-        normalizerPath,
-        referenceDataPath
-      );
+      await controllerRef.current.initialize();
       
       setIsInitialized(true);
       setCurrentState(controllerRef.current.getCurrentState());

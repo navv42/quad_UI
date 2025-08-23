@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BufferGeometry, Line, Vector3, BufferAttribute, LineBasicMaterial } from 'three';
+import { BufferGeometry, Line, BufferAttribute, LineBasicMaterial } from 'three';
 import type { TrajectoryPoint } from '@/lib/types/quadcopter';
 
 interface TrailProps {

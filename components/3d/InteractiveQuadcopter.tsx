@@ -1,7 +1,6 @@
-import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { useFrame, useThree, extend, ThreeEvent } from '@react-three/fiber';
-import { Vector3 as ThreeVector3, Euler, Group, Mesh, Raycaster, Plane, Vector2, Matrix4 } from 'three';
-import * as THREE from 'three';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { useThree, ThreeEvent } from '@react-three/fiber';
+import { Vector3 as ThreeVector3, Euler, Group, Raycaster, Plane, Vector2 } from 'three';
 import { QuadcopterModel } from './QuadcopterModel';
 
 interface InteractiveQuadcopterProps {
@@ -14,72 +13,6 @@ interface InteractiveQuadcopterProps {
   onDragEnd?: () => void;
 }
 
-
-function PrimitiveQuadcopter() {
-  function Propeller({ index }: { index: number }) {
-    const meshRef = useRef<THREE.Mesh>(null);
-    
-    useFrame((state, delta) => {
-      if (meshRef.current) {
-        const direction = index % 2 === 0 ? 1 : -1;
-        meshRef.current.rotation.y += delta * 30 * direction;
-      }
-    });
-    
-    return (
-      <mesh ref={meshRef} position={[0, 0.02, 0]}>
-        <cylinderGeometry args={[0.15, 0.15, 0.002, 16]} />
-        <meshStandardMaterial color="#00ff00" opacity={0.3} transparent />
-        <mesh>
-          <boxGeometry args={[0.25, 0.001, 0.02]} />
-          <meshStandardMaterial color="#00ff00" opacity={0.6} transparent />
-        </mesh>
-        <mesh rotation={[0, Math.PI / 2, 0]}>
-          <boxGeometry args={[0.25, 0.001, 0.02]} />
-          <meshStandardMaterial color="#00ff00" opacity={0.6} transparent />
-        </mesh>
-      </mesh>
-    );
-  }
-  
-  return (
-    <>
-      <mesh>
-        <boxGeometry args={[0.3, 0.1, 0.3]} />
-        <meshStandardMaterial color="#333333" metalness={0.8} roughness={0.2} />
-      </mesh>
-      
-      <mesh rotation={[0, 0, 0]}>
-        <boxGeometry args={[0.5, 0.02, 0.05]} />
-        <meshStandardMaterial color="#666666" />
-      </mesh>
-      <mesh rotation={[0, Math.PI / 2, 0]}>
-        <boxGeometry args={[0.5, 0.02, 0.05]} />
-        <meshStandardMaterial color="#666666" />
-      </mesh>
-      
-      {[
-        [0.25, 0.05, 0],
-        [-0.25, 0.05, 0],
-        [0, 0.05, 0.25],
-        [0, 0.05, -0.25],
-      ].map((pos, i) => (
-        <group key={i} position={pos as [number, number, number]}>
-          <mesh>
-            <cylinderGeometry args={[0.03, 0.03, 0.03, 8]} />
-            <meshStandardMaterial color="#222222" />
-          </mesh>
-          <Propeller index={i} />
-        </group>
-      ))}
-      
-      <mesh position={[0.2, 0, 0]}>
-        <coneGeometry args={[0.02, 0.05, 4]} />
-        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.5} />
-      </mesh>
-    </>
-  );
-}
 
 export function InteractiveQuadcopter({
   position,
@@ -163,7 +96,7 @@ export function InteractiveQuadcopter({
     gl.domElement.setPointerCapture(event.pointerId);
   };
   
-  const handlePointerMove = (event: PointerEvent) => {
+  const handlePointerMove = useCallback((event: PointerEvent) => {
     if (!isDragging || !groupRef.current || isPlaying) return;
     
     const mouse = new Vector2(
@@ -209,9 +142,9 @@ export function InteractiveQuadcopter({
         groupRef.current.rotation.z
       ]);
     }
-  };
+  }, [isDragging, dragMode, size, camera, onPositionChange, onRotationChange, isPlaying]);
   
-  const handlePointerUp = (event: PointerEvent) => {
+  const handlePointerUp = useCallback((event: PointerEvent) => {
     if (!isDragging) return;
     
     setIsDragging(false);
@@ -219,7 +152,7 @@ export function InteractiveQuadcopter({
     
     // Release pointer capture
     gl.domElement.releasePointerCapture(event.pointerId);
-  };
+  }, [isDragging, onDragEnd, gl]);
   
   // Set up global pointer move and up handlers
   useEffect(() => {
@@ -240,7 +173,7 @@ export function InteractiveQuadcopter({
         window.removeEventListener('pointerup', handleGlobalPointerUp);
       };
     }
-  }, [isDragging, dragMode, handlePointerMove, handlePointerUp]);
+  }, [isDragging, handlePointerMove, handlePointerUp]);
   
   // Update cursor based on hover
   useEffect(() => {

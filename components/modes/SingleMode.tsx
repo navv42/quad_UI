@@ -218,7 +218,7 @@ export function SingleMode() {
         setCurrentAction(currentPoint.action);
       }
     }
-  }, [quadcopter.currentFrame, quadcopter.isPlaying]);
+  }, [quadcopter.currentFrame, quadcopter.isPlaying, quadcopter.trajectory]);
   
   // Log errors
   useEffect(() => {
@@ -323,7 +323,6 @@ export function SingleMode() {
         // Simulation
         isPlaying={quadcopter.isPlaying}
         isComputing={isComputing}
-        trajectory={quadcopter.trajectory}
         simSpeed={simSpeed}
         setSimSpeed={setSimSpeed}
         

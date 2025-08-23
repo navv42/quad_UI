@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, Suspense } from 'react';
+import React, { useRef, useEffect, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3 as ThreeVector3, Quaternion as ThreeQuaternion, Mesh, Group } from 'three';
 import type { Vector3, Quaternion } from '@/lib/physics/types';
@@ -118,7 +118,6 @@ export function PrecomputedTrajectory({
   // Reset when trajectory changes
   useEffect(() => {
     timeRef.current = 0;
-    setCurrentIndex(0);
   }, [trajectory]);
   
   // Animation loop
@@ -144,7 +143,6 @@ export function PrecomputedTrajectory({
       return;
     }
     
-    setCurrentIndex(segmentIndex);
     
     // Get segment points
     const prev = trajectory[segmentIndex];

@@ -19,7 +19,7 @@ import { getRandomFormation } from '@/lib/formations/formations';
 
 // Types
 import type { Vector3, Quaternion } from '@/lib/types';
-import type { QuadcopterState, TrajectoryPoint } from '@/lib/types/quadcopter';
+import type { QuadcopterState } from '@/lib/types/quadcopter';
 
 // Constants
 const DT = 0.04;
@@ -28,7 +28,7 @@ const MAX_HEIGHT = 1.0;
 const MIN_HEIGHT = -1.0;
 
 // Helper to generate initial positions for quadcopters
-function getInitialPosition(index: number, total: number): Vector3 {
+function getInitialPosition(index: number): Vector3 {
   const spacing = 0.2;
   // Arrange quadcopters in a line: [-0.2, 0, 0], [0.2, 0, 0], [-0.4, 0, 0], [0.4, 0, 0], etc.
   const position = Math.floor(index / 2) + 1;
@@ -72,7 +72,7 @@ export function MultiMode() {
   useEffect(() => {
     const newQuadcopters: QuadcopterState[] = [];
     for (let i = 0; i < quadcopterCount; i++) {
-      const position = getInitialPosition(i, quadcopterCount);
+      const position = getInitialPosition(i);
       newQuadcopters.push({
         id: `quad-${i}`,
         position,
@@ -125,7 +125,7 @@ export function MultiMode() {
   
   // Handle randomize positions
   const handleRandomize = () => {
-    const newQuadcopters = quadcopters.map((quad, index) => ({
+    const newQuadcopters = quadcopters.map((quad) => ({
       ...quad,
       position: [
         (Math.random() * 2 - 1),
@@ -183,7 +183,7 @@ export function MultiMode() {
       // Reset to default positions
       const newQuadcopters: QuadcopterState[] = [];
       for (let i = 0; i < quadcopterCount; i++) {
-        const position = getInitialPosition(i, quadcopterCount);
+        const position = getInitialPosition(i);
         newQuadcopters.push({
           id: `quad-${i}`,
           position,
@@ -219,7 +219,6 @@ export function MultiMode() {
         // Start new simulation
         setSavedInitialStates([...quadcopters]);
         resetTrajectories();
-        let retries = 0
         
         // Prepare initial states for simulation
         const initialStates = quadcopters.map(quad => ({

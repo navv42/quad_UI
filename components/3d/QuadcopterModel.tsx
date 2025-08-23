@@ -3,7 +3,6 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { Group, Box3, Vector3 as ThreeVector3, Mesh } from 'three';
 import { useModelConfig, loadConfig } from '@/hooks/useModelConfig';
-import * as THREE from 'three';
 
 
 interface QuadcopterModelProps {
@@ -25,7 +24,6 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
   
   const group = useRef<Group>(null);
   const propellerRefs = useRef<Mesh[]>([]);
-  const isCentered = useRef(false);
   
   
   // Load the GLTF model
@@ -50,8 +48,8 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       
       // Calculate bounding box to understand model size
       const box = new Box3().setFromObject(clonedScene);
-      const size = box.getSize(new ThreeVector3());
-      const center = box.getCenter(new ThreeVector3());
+      box.getSize(new ThreeVector3());
+      box.getCenter(new ThreeVector3());
       
       // console.log('Model dimensions:', {
       //   width: size.x,
@@ -61,16 +59,10 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       // });
       
       // Count meshes and materials
-      let meshCount = 0;
-      let vertexCount = 0;
       const materials = new Set();
       
       clonedScene.traverse((child) => {
         if (child instanceof Mesh) {
-          meshCount++;
-          if (child.geometry.attributes.position) {
-            vertexCount += child.geometry.attributes.position.count;
-          }
           if (child.material) {
             materials.add(child.material);
           }
@@ -85,11 +77,11 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       // });
       
       // Check if model might be too small/large
-      const scaledSize = {
-        width: size.x * (Array.isArray(scale) ? scale[0] : scale),
-        height: size.y * (Array.isArray(scale) ? scale[1] : scale),
-        depth: size.z * (Array.isArray(scale) ? scale[2] : scale)
-      };
+      // const scaledSize = {
+      //   width: size.x * (Array.isArray(scale) ? scale[0] : scale),
+      //   height: size.y * (Array.isArray(scale) ? scale[1] : scale),
+      //   depth: size.z * (Array.isArray(scale) ? scale[2] : scale)
+      // };
       
       // console.log('Scaled model size:', scaledSize);
       
@@ -103,9 +95,7 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       // Find propellers in the model - look for cylinders that might be propellers
       propellerRefs.current = [];
       
-      let objectCount = 0;
       clonedScene.traverse((child) => {
-        objectCount++;
         if (child instanceof Mesh) {
           const name = child.name.toLowerCase();
           // Look for propellers based on model config
