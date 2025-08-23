@@ -5,6 +5,10 @@
 import * as ort from 'onnxruntime-web';
 import type { Action, NormalizerConfig } from '@/lib/types/simulation';
 
+// Singleton instance
+let inferenceInstance: ONNXInference | null = null;
+let initializationPromise: Promise<ONNXInference> | null = null;
+
 export class ONNXInference {
   private session: ort.InferenceSession | null = null;
   private normalizer: NormalizerConfig | null = null;
@@ -15,6 +19,35 @@ export class ONNXInference {
     if (typeof window !== 'undefined') {
       ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
     }
+  }
+  
+  /**
+   * Get or create singleton instance
+   */
+  public static async getInstance(): Promise<ONNXInference> {
+    if (inferenceInstance && inferenceInstance.isInitialized) {
+      return inferenceInstance;
+    }
+    
+    if (!initializationPromise) {
+      initializationPromise = (async () => {
+        const instance = new ONNXInference();
+        await instance.initialize('/quadcopter_actor.onnx', '/normalizer.json');
+        inferenceInstance = instance;
+        return instance;
+      })();
+    }
+    
+    return initializationPromise;
+  }
+  
+  /**
+   * Preload the model without waiting
+   */
+  public static preload(): void {
+    ONNXInference.getInstance().catch(err => {
+      console.error('Failed to preload ONNX model:', err);
+    });
   }
 
   /**

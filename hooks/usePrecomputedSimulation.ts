@@ -2,15 +2,10 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { QuadcopterPhysics } from '@/lib/physics/QuadcopterPhysics';
 import { ONNXInference } from '@/lib/inference/ONNXInference';
 import type { Vector3, Quaternion } from '@/lib/physics/types';
+import type { TrajectoryPoint } from '@/lib/types/quadcopter';
 
-interface TrajectoryPoint {
-  position: Vector3;
-  quaternion: Quaternion;
-  velocity: Vector3;
-  angularVelocity: Vector3;
-  action: [number, number, number, number];
-  timestamp: number;
-}
+// Re-export for backward compatibility
+export type { TrajectoryPoint };
 
 interface UsePrecomputedSimulationProps {
   dt: number;
@@ -41,11 +36,7 @@ export function usePrecomputedSimulation({
   const initializeAI = useCallback(async () => {
     if (!inferenceRef.current) {
       try {
-        inferenceRef.current = new ONNXInference();
-        await inferenceRef.current.initialize(
-          '/quadcopter_actor.onnx',
-          '/normalizer.json'
-        );
+        inferenceRef.current = await ONNXInference.getInstance();
         return true;
       } catch (error) {
         console.error('Failed to initialize AI:', error);

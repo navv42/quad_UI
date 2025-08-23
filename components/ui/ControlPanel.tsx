@@ -22,19 +22,12 @@ interface ControlPanelProps {
   isPlaying: boolean;
   isComputing: boolean;
   trajectory: any[];
-  stepMode: boolean;
-  setStepMode: (value: boolean) => void;
-  currentStep: number;
-  controlMode: 'translate' | 'rotate';
-  setControlMode: (mode: 'translate' | 'rotate') => void;
   simSpeed: number;
   setSimSpeed: (value: number) => void;
   
   // Actions
   handlePlayPause: () => void;
   handleReset: () => void;
-  handlePrevStep: () => void;
-  handleNextStep: () => void;
   
   // Display data
   currentState?: any;
@@ -47,16 +40,24 @@ export function ControlPanel({
   initialRoll, initialPitch, initialYaw,
   setInitialRoll, setInitialPitch, setInitialYaw,
   isPlaying, isComputing, trajectory,
-  stepMode, setStepMode,
-  currentStep, controlMode, setControlMode,
   simSpeed, setSimSpeed,
   handlePlayPause, handleReset,
-  handlePrevStep, handleNextStep,
   currentState, currentAction
 }: ControlPanelProps) {
   return (
     <div className={styles.panel}>
       <h3 className={styles.title}>Quadcopter Control</h3>
+      
+      {/* Control hints */}
+      <div style={{
+        fontSize: '11px',
+        color: '#888',
+        textAlign: 'center',
+        marginBottom: '0px',
+        fontStyle: 'italic'
+      }}>
+        Left-drag to move • Right-drag to rotate
+      </div>
       
       {/* Position Controls */}
       <div className={styles.section}>
@@ -146,27 +147,6 @@ export function ControlPanel({
         </div>
       </div>
       
-      {/* Interaction Mode */}
-      <div className={styles.section}>
-        <h4 className={styles.sectionTitle}>Interaction Mode</h4>
-        <div className={styles.buttonGroup}>
-          <button
-            onClick={() => setControlMode('translate')}
-            className={controlMode === 'translate' ? styles.active : ''}
-            disabled={isPlaying}
-          >
-            Move
-          </button>
-          <button
-            onClick={() => setControlMode('rotate')}
-            className={controlMode === 'rotate' ? styles.active : ''}
-            disabled={isPlaying}
-          >
-            Rotate
-          </button>
-        </div>
-      </div>
-      
       {/* Simulation Controls */}
       <div className={styles.section}>
         <h4 className={styles.sectionTitle}>Simulation</h4>
@@ -187,89 +167,32 @@ export function ControlPanel({
           </button>
         </div>
         
+        
+
         <div className={styles.control}>
-          <label>
-            <input
-              type="checkbox"
-              checked={stepMode}
-              onChange={(e) => setStepMode(e.target.checked)}
-              disabled={isPlaying}
-            />
-            Enable Step-by-Step
-          </label>
+          <label>Speed: {simSpeed.toFixed(1)}x</label>
+          <input
+            type="range"
+            min="0.1"
+            max="1"
+            step="0.1"
+            value={simSpeed}
+            onChange={(e) => setSimSpeed(parseFloat(e.target.value))}
+          />
         </div>
-        
-        {stepMode && trajectory.length > 0 && (
-          <div className={styles.stepControls}>
-            <button onClick={handlePrevStep} disabled={currentStep === 0}>
-              Previous
-            </button>
-            <span className={styles.stepInfo}>
-              Step {currentStep + 1} / {trajectory.length}
-            </span>
-            <button 
-              onClick={handleNextStep} 
-              disabled={currentStep >= trajectory.length - 1}
-            >
-              Next
-            </button>
-          </div>
-        )}
-        
-        {!stepMode && (
-          <div className={styles.control}>
-            <label>Speed: {simSpeed.toFixed(1)}x</label>
-            <input
-              type="range"
-              min="0.1"
-              max="3"
-              step="0.1"
-              value={simSpeed}
-              onChange={(e) => setSimSpeed(parseFloat(e.target.value))}
-            />
-          </div>
-        )}
+
       </div>
       
-      {/* State Display for Step Mode */}
-      {stepMode && currentState && (
-        <div className={styles.section}>
-          <h4 className={styles.sectionTitle}>Current State</h4>
-          <div className={styles.stateDisplay}>
-            <div>Step: {currentState.step}</div>
-            <div>Time: {currentState.timestamp}s</div>
-            <details className={styles.details}>
-              <summary>Position</summary>
-              <pre>{JSON.stringify(currentState.position, null, 2)}</pre>
-            </details>
-            <details className={styles.details}>
-              <summary>Velocity</summary>
-              <pre>{JSON.stringify(currentState.velocity, null, 2)}</pre>
-            </details>
-            <details className={styles.details}>
-              <summary>Quaternion</summary>
-              <pre>{JSON.stringify(currentState.quaternion, null, 2)}</pre>
-            </details>
-            <details className={styles.details}>
-              <summary>Angular Velocity</summary>
-              <pre>{JSON.stringify(currentState.angularVelocity, null, 2)}</pre>
-            </details>
-            <details className={styles.details}>
-              <summary>Action</summary>
-              <pre>{JSON.stringify(currentState.action, null, 2)}</pre>
-            </details>
-          </div>
-        </div>
-      )}
+
       
       {/* Action Display */}
-      {currentAction && !stepMode && (
+      {currentAction && (
         <div className={styles.section}>
           <h4 className={styles.sectionTitle}>Control Actions</h4>
           <div className={styles.actionBars}>
             <ActionBar label="Throttle" value={currentAction[0]} />
-            <ActionBar label="Roll" value={currentAction[1]} />
-            <ActionBar label="Pitch" value={currentAction[2]} />
+            <ActionBar label="Pitch" value={-currentAction[1]} />
+            <ActionBar label="Roll" value={-currentAction[2]} />
             <ActionBar label="Yaw" value={currentAction[3]} />
           </div>
         </div>

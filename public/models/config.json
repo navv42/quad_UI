@@ -1,0 +1,26 @@
+{
+  "models": {
+    "quad": {
+      "name": "Classic Quadcopter",
+      "path": "/models/quad.glb",
+      "scale": 0.00001,
+      "rotation": [0, 3.14159, 0],
+      "centerOffset": [0, 0, 0],
+      "propellers": ["object_28", "object_31", "object_34", "object_37"],
+      "description": "Original high-poly model"
+    },
+    "quad_2": {
+      "name": "Sport Quadcopter",
+      "path": "/models/quad_3.glb",
+      "scale": 0.0002,
+      "rotation": [0.05, 0, 0],
+      "centerOffset": [0, 0.05, 0],
+      "propellers": ["body1_paint_-_enamel_glossy_(yellow)_0",
+        "body1_paint_-_enamel_glossy_(yellow)_0001",
+        "body1_paint_-_enamel_glossy_(yellow)_0002",
+        "body1_paint_-_enamel_glossy_(yellow)_0003"],
+      "description": "Detailed sport model with textures"
+    }
+  },
+  "defaultModel": "quad_2"
+}

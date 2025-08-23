@@ -4,11 +4,11 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Quaternion as ThreeQuaternion, Euler } from 'three';
+import { preloadModels } from '@/components/3d/QuadcopterModel';
+import { ONNXInference } from '@/lib/inference/ONNXInference';
 
 // Components
-import { PrecomputedTrajectory } from '@/components/simulation/PrecomputedTrajectory';
-import { StepTrajectory } from '@/components/simulation/StepTrajectory';
-import { InteractiveQuadcopter } from '@/components/3d/InteractiveQuadcopter';
+import { Quadcopter } from '@/components/3d/Quadcopter';
 import { Axes } from '@/components/3d/Axes';
 import { ControlPanel } from '@/components/ui/ControlPanel';
 
@@ -18,6 +18,7 @@ import { threeJsQuaternionToPhysics } from '@/lib/coordinateTransform';
 
 // Types
 import type { Vector3, Quaternion } from '@/lib/types';
+import type { QuadcopterState, TrajectoryPoint } from '@/lib/types/quadcopter';
 
 // Constants
 const DT = 0.04;
@@ -42,30 +43,47 @@ function normalizeAngle(degrees: number): number {
 }
 
 export default function Home() {
+  // Loading state for ONNX
+  const [isOnnxLoading, setIsOnnxLoading] = useState(true);
+  
+  // Preload models and ONNX on mount
+  useEffect(() => {
+    preloadModels();
+    
+    // Preload ONNX model
+    ONNXInference.getInstance()
+      .then(() => {
+        console.log('ONNX model preloaded successfully');
+        setIsOnnxLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to preload ONNX model:', err);
+        setIsOnnxLoading(false); // Still allow app to work
+      });
+  }, []);
+  
   // Camera and controls
   const [orbitEnabled, setOrbitEnabled] = useState(true);
-  const [controlMode, setControlMode] = useState<'translate' | 'rotate'>('translate');
-  
-  // Simulation state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [hasPositionChanged, setHasPositionChanged] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1.0);
   const [currentAction, setCurrentAction] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   
-  // Step mode
-  const [stepMode, setStepMode] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [currentState, setCurrentState] = useState<any>(null);
+  // Quadcopter state management
+  const [quadcopter, setQuadcopter] = useState<QuadcopterState>({
+    id: 'quad-1',
+    position: [0, 0, 0],
+    rotation: [0, 0, 0], // [roll, pitch, yaw] in radians
+    velocity: [0, 0, 0],
+    angularVelocity: [0, 0, 0],
+    isPlaying: false,
+    trajectory: [],
+    currentFrame: 0,
+    modelId: 'quad_2'
+  });
   
-  // Initial position controls (Three.js coordinates)
-  const [initialX, setInitialX] = useState(0);
-  const [initialY, setInitialY] = useState(0);
-  const [initialZ, setInitialZ] = useState(0);
-  
-  // Initial orientation controls (in degrees for UI)
-  const [initialRoll, setInitialRoll] = useState(0);
-  const [initialPitch, setInitialPitch] = useState(0);
-  const [initialYaw, setInitialYaw] = useState(0);
+  // Helper to update quadcopter state
+  const updateQuadcopter = (updates: Partial<QuadcopterState>) => {
+    setQuadcopter(prev => ({ ...prev, ...updates }));
+  };
   
   // Use precomputed simulation hook
   const {
@@ -81,15 +99,10 @@ export default function Home() {
     minHeight: MIN_HEIGHT,
   });
 
-  // Convert Euler angles (in degrees) to quaternion for physics simulation
-  const eulerToQuaternion = (rollDeg: number, pitchDeg: number, yawDeg: number): Quaternion => {
-    // Convert degrees to radians with correct mapping for Three.js
-    const pitch = pitchDeg * Math.PI / 180;  // X axis rotation
-    const yaw = yawDeg * Math.PI / 180;      // Y axis rotation  
-    const roll = rollDeg * Math.PI / 180;    // Z axis rotation
-    
-    // Create Three.js Euler angles and quaternion
-    const euler = new Euler(pitch, yaw, roll, 'XYZ');
+  // Convert Euler angles (in radians) to quaternion for physics simulation
+  const eulerToQuaternion = (roll: number, pitch: number, yaw: number): Quaternion => {
+    // Create Three.js Euler angles and quaternion with YXZ order for proper aviation controls
+    const euler = new Euler(pitch, yaw, roll, 'YXZ');
     const threeQuat = new ThreeQuaternion();
     threeQuat.setFromEuler(euler);
     
@@ -97,76 +110,73 @@ export default function Home() {
     return threeJsQuaternionToPhysics(threeQuat);
   };
 
-  // Get current initial state based on input values
+  // Get current initial state based on quadcopter state
   const getCurrentInitialState = () => ({
-    position: [initialX, initialY, initialZ] as Vector3,
-    velocity: [0, 0, 0] as Vector3,
-    quaternion: eulerToQuaternion(initialRoll, initialPitch, initialYaw),
-    angularVelocity: [0, 0, 0] as Vector3,
+    position: quadcopter.position,
+    velocity: quadcopter.velocity,
+    quaternion: eulerToQuaternion(
+      quadcopter.rotation[0], 
+      quadcopter.rotation[1], 
+      quadcopter.rotation[2]
+    ),
+    angularVelocity: quadcopter.angularVelocity,
   });
 
-  const handleReset = async () => {
-    console.log('=== RESET CALLED ===');
-    console.log('Previous trajectory length:', trajectory.length);
-    setIsPlaying(false);
+  const handleReset = () => {
+    // Reset quadcopter to origin
+    updateQuadcopter({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+      isPlaying: false,
+      trajectory: [],
+      currentFrame: 0
+    });
+    
     resetTrajectory();
-    
-    const newInitialState = getCurrentInitialState();
-    console.log('Computing trajectory with initial state:', newInitialState);
-    
-    // Always use AI control
-    await computeTrajectory(newInitialState, true, MANUAL_THROTTLE);
-    console.log('New trajectory computed, length:', trajectory.length);
+    setCurrentAction([0, 0, 0, 0]);
   };
 
   const handlePlayPause = async () => {
-    console.log('=== PLAY/PAUSE CALLED ===');
-    console.log('isPlaying:', isPlaying, 'hasPositionChanged:', hasPositionChanged, 'trajectory.length:', trajectory.length);
-    
-    if (!isPlaying) {
-      // If position has changed or no trajectory exists, compute new trajectory
-      if (hasPositionChanged || trajectory.length === 0) {
-        console.log('Position changed or no trajectory, calling handleReset...');
-        await handleReset();
-        setHasPositionChanged(false);
-        console.log('After reset, trajectory.length:', trajectory.length);
-      }
-      console.log('Setting isPlaying to true');
-      setIsPlaying(true);
+    if (!quadcopter.isPlaying) {
+      // Always compute new trajectory from current values when playing
+      resetTrajectory();
+      
+      const newInitialState = getCurrentInitialState();
+      console.log('Computing trajectory from current initial values:', newInitialState);
+      
+      // Compute trajectory with AI control
+      await computeTrajectory(newInitialState, true, MANUAL_THROTTLE);
+      
+      // Note: trajectory will be set via useEffect below
     } else {
-      console.log('Pausing simulation');
-      setIsPlaying(false);
+      // Pause
+      updateQuadcopter({ isPlaying: false });
       setCurrentAction([0, 0, 0, 0]);
     }
   };
   
-  const handleSimulationComplete = () => {
-    console.log('Simulation completed');
-    setIsPlaying(false);
-    setCurrentAction([0, 0, 0, 0]);
-  };
-  
-  const handleActionUpdate = (action: [number, number, number, number]) => {
-    setCurrentAction(action);
-  };
-  
-  // Step mode controls
-  const handleNextStep = () => {
-    if (currentStep < trajectory.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-  
-  const handlePrevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  
-  // Reset step when trajectory changes
+  // Sync trajectory from hook to quadcopter state
   useEffect(() => {
-    setCurrentStep(0);
+    if (trajectory.length > 0) {
+      updateQuadcopter({ 
+        trajectory: trajectory as TrajectoryPoint[], 
+        isPlaying: true,
+        currentFrame: 0
+      });
+    }
   }, [trajectory]);
+  
+  // Update action display based on current frame
+  useEffect(() => {
+    if (quadcopter.isPlaying && quadcopter.trajectory.length > 0) {
+      const currentPoint = quadcopter.trajectory[quadcopter.currentFrame];
+      if (currentPoint?.action) {
+        setCurrentAction(currentPoint.action);
+      }
+    }
+  }, [quadcopter.currentFrame, quadcopter.isPlaying]);
   
   // Log errors
   useEffect(() => {
@@ -175,83 +185,70 @@ export default function Home() {
     }
   }, [error]);
 
+  const boxSize = 2; // The total width, height, and depth of the box
+  const boxDivisions = 1; // The number of grid lines on each face
+  const boxColor = '#666666'; // The color of the grid lines
+  const boxHalfSize = boxSize / 2;
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       {/* 3D Scene */}
       <Canvas
-        camera={{ position: [3, 3, 3], fov: 60 }}
-        style={{ background: 'radial-gradient(ellipse at center, #1b2735 0%, #090a0f 100%)' }}
-        shadows
+        camera={{ position: [2, 2, 2], fov: 60 }}
+        style={{ background: 'radial-gradient(ellipse at center,rgb(10, 38, 69) 0%,rgb(60, 63, 78) 100%)' }}
+        
       >
         {/* Lighting setup */}
-        <ambientLight intensity={0.6} />
-        <directionalLight 
-          position={[10, 15, 10]} 
-          intensity={0.8}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
+        <ambientLight intensity={2.5} />
+
+        
+        <group>
+          {/* A small red sphere to clearly mark the origin point (0,0,0) */}
+          <mesh>
+            <sphereGeometry args={[0.02, 16, 16]} />
+            <meshBasicMaterial color="red" />
+          </mesh>
+
+          {/* Floor Grid (bottom face) */}
+          <gridHelper args={[boxSize, boxDivisions, boxColor, boxColor]} position={[0, -boxHalfSize, 0]} />
+
+          {/* Ceiling Grid (top face) */}
+          <gridHelper args={[boxSize, boxDivisions, boxColor, boxColor]} position={[0, boxHalfSize, 0]} />
+
+          {/* Back Wall Grid */}
+          <gridHelper args={[boxSize, boxDivisions, boxColor, boxColor]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -boxHalfSize]} />
+
+          {/* Front Wall Grid */}
+          <gridHelper args={[boxSize, boxDivisions, boxColor, boxColor]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, boxHalfSize]} />
+
+          {/* Left Wall Grid */}
+          <gridHelper args={[boxSize, boxDivisions, boxColor, boxColor]} rotation={[0, 0, Math.PI / 2]} position={[-boxHalfSize, 0, 0]} />
+
+          {/* Right Wall Grid */}
+          <gridHelper args={[boxSize, boxDivisions, boxColor, boxColor]} rotation={[0, 0, Math.PI / 2]} position={[boxHalfSize, 0, 0]} />
+        </group>
+
+        {/* <Axes /> */}
+        
+        {/* Unified Quadcopter component */}
+        <Quadcopter
+          state={quadcopter}
+          onUpdate={updateQuadcopter}
+          isInteractive={!quadcopter.isPlaying}
+          simSpeed={simSpeed}
+          onDragStart={() => setOrbitEnabled(false)}
+          onDragEnd={() => setOrbitEnabled(true)}
         />
-        <pointLight position={[-10, 10, -10]} intensity={0.4} />
-        
-        {/* Ground plane with grid */}
-        <gridHelper args={[4, 8, '#444444', '#222222']} rotation={[0, 0, 0]} />
-        
-        <Axes />
-        
-        {/* Show different modes: step mode, playing, or interactive */}
-        {stepMode && trajectory.length > 0 ? (
-          <StepTrajectory
-            trajectory={trajectory}
-            currentStep={currentStep}
-            onStateUpdate={setCurrentState}
-          />
-        ) : trajectory.length > 0 && isPlaying ? (
-          <PrecomputedTrajectory
-            isPlaying={isPlaying}
-            trajectory={trajectory}
-            simSpeed={simSpeed}
-            onComplete={handleSimulationComplete}
-            onActionUpdate={handleActionUpdate}
-          />
-        ) : (
-          <InteractiveQuadcopter
-            position={[initialX, initialZ, initialY]}  // Three.js: [x, y, z] where y is up
-            rotation={[
-              initialPitch * Math.PI / 180,  // Three.js X rotation = pitch
-              initialYaw * Math.PI / 180,     // Three.js Y rotation = yaw
-              initialRoll * Math.PI / 180     // Three.js Z rotation = roll
-            ]}
-            onPositionChange={(pos) => {
-              setInitialX(pos[0]);     // X stays X
-              setInitialY(pos[2]);     // Three.js Z -> our Y 
-              setInitialZ(pos[1]);     // Three.js Y -> our Z (vertical)
-              setHasPositionChanged(true);
-            }}
-            onRotationChange={(rot) => {
-              // Three.js Euler angles [x, y, z] map to [pitch, yaw, roll] in aviation
-              // Normalize angles to [-180, 180] range
-              setInitialPitch(normalizeAngle(rot[0] * 180 / Math.PI));  // X rotation = pitch
-              setInitialYaw(normalizeAngle(rot[1] * 180 / Math.PI));    // Y rotation = yaw  
-              setInitialRoll(normalizeAngle(rot[2] * 180 / Math.PI));   // Z rotation = roll
-              setHasPositionChanged(true);
-            }}
-            isPlaying={isPlaying}
-            controlMode={controlMode}
-            onDragStart={() => setOrbitEnabled(false)}
-            onDragEnd={() => setOrbitEnabled(true)}
-          />
-        )}
         
         {/* Show loading indicator */}
-        {isComputing && (
+        {/* {isComputing && (
           <group position={[0, 2, 0]}>
             <mesh>
               <boxGeometry args={[0.1, 0.1, 0.1]} />
               <meshBasicMaterial color="yellow" />
             </mesh>
           </group>
-        )}
+        )} */}
         
         <OrbitControls 
           enabled={orbitEnabled}
@@ -268,59 +265,67 @@ export default function Home() {
       
       {/* Control Panel */}
       <ControlPanel
-        // Position
-        initialX={initialX}
-        initialY={initialY}
-        initialZ={initialZ}
-        setInitialX={setInitialX}
-        setInitialY={setInitialY}
-        setInitialZ={setInitialZ}
+        // Position (convert from physics to display)
+        initialX={quadcopter.position[0]}
+        initialY={quadcopter.position[1]}
+        initialZ={quadcopter.position[2]}
+        setInitialX={(x) => updateQuadcopter({ position: [x, quadcopter.position[1], quadcopter.position[2]] })}
+        setInitialY={(y) => updateQuadcopter({ position: [quadcopter.position[0], y, quadcopter.position[2]] })}
+        setInitialZ={(z) => updateQuadcopter({ position: [quadcopter.position[0], quadcopter.position[1], z] })}
         
-        // Orientation
-        initialRoll={initialRoll}
-        initialPitch={initialPitch}
-        initialYaw={initialYaw}
-        setInitialRoll={setInitialRoll}
-        setInitialPitch={setInitialPitch}
-        setInitialYaw={setInitialYaw}
+        // Orientation (convert radians to degrees for display)
+        initialRoll={quadcopter.rotation[0] * 180 / Math.PI}
+        initialPitch={quadcopter.rotation[1] * 180 / Math.PI}
+        initialYaw={quadcopter.rotation[2] * 180 / Math.PI}
+        setInitialRoll={(r) => updateQuadcopter({ rotation: [r * Math.PI / 180, quadcopter.rotation[1], quadcopter.rotation[2]] })}
+        setInitialPitch={(p) => updateQuadcopter({ rotation: [quadcopter.rotation[0], p * Math.PI / 180, quadcopter.rotation[2]] })}
+        setInitialYaw={(y) => updateQuadcopter({ rotation: [quadcopter.rotation[0], quadcopter.rotation[1], y * Math.PI / 180] })}
         
         // Simulation
-        isPlaying={isPlaying}
+        isPlaying={quadcopter.isPlaying}
         isComputing={isComputing}
-        trajectory={trajectory}
-        stepMode={stepMode}
-        setStepMode={setStepMode}
-        currentStep={currentStep}
-        controlMode={controlMode}
-        setControlMode={setControlMode}
+        trajectory={quadcopter.trajectory}
         simSpeed={simSpeed}
         setSimSpeed={setSimSpeed}
         
         // Actions
         handlePlayPause={handlePlayPause}
         handleReset={handleReset}
-        handlePrevStep={handlePrevStep}
-        handleNextStep={handleNextStep}
-        
-        // Display
-        currentState={currentState}
         currentAction={currentAction}
       />
       
-      {/* Help text when no trajectory */}
-      {stepMode && trajectory.length === 0 && (
+      
+      {/* ONNX Loading indicator */}
+      {isOnnxLoading && (
         <div style={{
           position: 'absolute',
-          bottom: '20px',
+          top: '20px',
           left: '50%',
           transform: 'translateX(-50%)',
-          color: 'white',
           background: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
           padding: '10px 20px',
-          borderRadius: '5px',
+          borderRadius: '8px',
           fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
         }}>
-          Click 'Play' first to compute trajectory, then use step controls
+          <div style={{
+            width: '16px',
+            height: '16px',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            borderTop: '2px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
+          Loading AI model...
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       )}
       

@@ -103,6 +103,13 @@ export function PrecomputedTrajectory({
   const timeRef = useRef(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   
+  // Set proper Euler order for aviation controls
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.rotation.order = 'YXZ';
+    }
+  }, []);
+  
   // Three.js objects for interpolation
   const prevPosRef = useRef(new ThreeVector3());
   const currPosRef = useRef(new ThreeVector3());
@@ -190,7 +197,7 @@ export function PrecomputedTrajectory({
     <group ref={meshRef}>
       {/* Use GLB model with Suspense for loading */}
       <Suspense fallback={<PrimitiveQuadcopter />}>
-        <QuadcopterModel scale={0.00001} showDebug={false} />
+        <QuadcopterModel showDebug={false} />
       </Suspense>
     </group>
   );

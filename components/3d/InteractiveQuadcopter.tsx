@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { useFrame, useThree, extend } from '@react-three/fiber';
 import { Vector3 as ThreeVector3, Euler, Group, Mesh, Raycaster, Plane, Vector2, Matrix4 } from 'three';
 import { QuadcopterModel } from './QuadcopterModel';
-import * as THREE from 'three';
 
 interface InteractiveQuadcopterProps {
   position: [number, number, number];
@@ -10,10 +9,10 @@ interface InteractiveQuadcopterProps {
   onPositionChange: (position: [number, number, number]) => void;
   onRotationChange: (rotation: [number, number, number]) => void;
   isPlaying: boolean;
-  controlMode: 'translate' | 'rotate';
   onDragStart?: () => void;
   onDragEnd?: () => void;
 }
+
 
 function PrimitiveQuadcopter() {
   function Propeller({ index }: { index: number }) {
@@ -87,7 +86,6 @@ export function InteractiveQuadcopter({
   onPositionChange,
   onRotationChange,
   isPlaying,
-  controlMode,
   onDragStart,
   onDragEnd
 }: InteractiveQuadcopterProps) {
@@ -95,6 +93,25 @@ export function InteractiveQuadcopter({
   const { camera, gl, size } = useThree();
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [dragMode, setDragMode] = useState<'translate' | 'rotate'>('translate');
+  
+  // Set proper Euler order for aviation controls (Yaw-Pitch-Roll)
+  useEffect(() => {
+    if (groupRef.current) {
+      groupRef.current.rotation.order = 'YXZ';
+    }
+  }, []);
+  
+  // Prevent context menu on right-click
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    gl.domElement.addEventListener('contextmenu', handleContextMenu);
+    return () => {
+      gl.domElement.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [gl]);
   
   // Create a plane for dragging
   const dragPlane = useRef(new Plane(new ThreeVector3(0, 1, 0), 0));
@@ -108,9 +125,14 @@ export function InteractiveQuadcopter({
     
     event.stopPropagation();
     setIsDragging(true);
+    
+    // Determine mode based on mouse button (0 = left, 2 = right)
+    const mode = event.button === 2 ? 'rotate' : 'translate';
+    setDragMode(mode);
+    
     onDragStart?.();
     
-    if (controlMode === 'translate' && groupRef.current) {
+    if (mode === 'translate' && groupRef.current) {
       // Set up the drag plane based on camera orientation
       const cameraDirection = new ThreeVector3();
       camera.getWorldDirection(cameraDirection);
@@ -132,7 +154,7 @@ export function InteractiveQuadcopter({
       if (raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
         offset.current.copy(intersection.current).sub(groupRef.current.position);
       }
-    } else if (controlMode === 'rotate' && groupRef.current) {
+    } else if (mode === 'rotate' && groupRef.current) {
       startRotation.current.copy(groupRef.current.rotation);
     }
     
@@ -148,7 +170,7 @@ export function InteractiveQuadcopter({
       -(event.clientY / size.height) * 2 + 1
     );
     
-    if (controlMode === 'translate') {
+    if (dragMode === 'translate') {
       raycaster.current.setFromCamera(mouse, camera);
       
       if (raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
@@ -162,7 +184,7 @@ export function InteractiveQuadcopter({
         groupRef.current.position.set(clampedX, clampedY, clampedZ);
         onPositionChange([clampedX, clampedY, clampedZ]);
       }
-    } else if (controlMode === 'rotate') {
+    } else if (dragMode === 'rotate') {
       // Rotate based on mouse movement
       const rotationSpeed = 0.01;
       const deltaX = event.movementX * rotationSpeed;
@@ -217,16 +239,12 @@ export function InteractiveQuadcopter({
         window.removeEventListener('pointerup', handleGlobalPointerUp);
       };
     }
-  }, [isDragging, controlMode]);
+  }, [isDragging, dragMode]);
   
-  // Update cursor based on hover and control mode
+  // Update cursor based on hover
   useEffect(() => {
     if (isHovered && !isPlaying) {
-      if (controlMode === 'translate') {
-        gl.domElement.style.cursor = 'move';
-      } else {
-        gl.domElement.style.cursor = 'grab';
-      }
+      gl.domElement.style.cursor = 'move';
     } else {
       gl.domElement.style.cursor = 'auto';
     }
@@ -234,24 +252,24 @@ export function InteractiveQuadcopter({
     return () => {
       gl.domElement.style.cursor = 'auto';
     };
-  }, [isHovered, controlMode, isPlaying, gl]);
+  }, [isHovered, isPlaying, gl]);
   
   return (
     <group 
       ref={groupRef} 
       position={position} 
-      rotation={rotation}
+      rotation={[rotation[0], rotation[1], rotation[2]]} // Will use YXZ order
       onPointerDown={handlePointerDown}
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}
     >
-      <Suspense fallback={<PrimitiveQuadcopter />}>
-        <QuadcopterModel scale={0.00001} showDebug={false} />
-      </Suspense>
+      {/* <Suspense fallback={<PrimitiveQuadcopter />}> */}
+      <QuadcopterModel showDebug={false} />
+      {/* </Suspense> */}
       
       {/* Invisible larger hitbox for easier selection */}
       <mesh visible={false}>
-        <boxGeometry args={[0.8, 0.8, 0.8]} />
+        <boxGeometry args={[0.5, 0.5, 0.5]} />
       </mesh>
     </group>
   );
