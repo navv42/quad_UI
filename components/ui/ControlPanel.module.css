@@ -1,0 +1,250 @@
+.panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 15px;
+  border-radius: 8px;
+  width: 280px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title {
+  margin: 0 0 10px 0;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.sectionTitle {
+  margin: 0 0 5px 0;
+  color: #aaa;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control label {
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.control input[type="range"] {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #00ff00;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.control input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control input[type="checkbox"] {
+  margin-right: 5px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 5px;
+}
+
+.buttonGroup button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.buttonGroup button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.buttonGroup button.active {
+  background: rgba(0, 255, 0, 0.2);
+  border-color: #00ff00;
+}
+
+.buttonGroup button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primaryButton {
+  background: rgba(0, 255, 0, 0.2) !important;
+  border-color: #00ff00 !important;
+  font-weight: 600;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: rgba(0, 255, 0, 0.3) !important;
+}
+
+.stepControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.stepControls button {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.stepControls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.stepControls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stepInfo {
+  color: white;
+  font-size: 11px;
+  flex: 1;
+  text-align: center;
+}
+
+.stateDisplay {
+  font-family: monospace;
+  font-size: 10px;
+  color: #0f0;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.details {
+  margin: 4px 0;
+}
+
+.details summary {
+  cursor: pointer;
+  color: #aaa;
+  font-size: 11px;
+  padding: 2px 0;
+}
+
+.details summary:hover {
+  color: white;
+}
+
+.details pre {
+  margin: 4px 0 0 10px;
+  color: #0f0;
+  font-size: 10px;
+}
+
+.actionBars {
+  display: flex;
+  gap: 15px;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+.actionBar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.actionLabel {
+  color: #aaa;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.actionBarContainer {
+  position: relative;
+  width: 20px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.actionBarBackground {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.actionBarFill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: #00ff00;
+  transition: all 0.1s ease-out;
+}
+
+.actionBarCenter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+}
