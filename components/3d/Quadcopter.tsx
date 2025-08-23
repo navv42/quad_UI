@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { 
   Vector3 as ThreeVector3, 
   Quaternion as ThreeQuaternion, 
@@ -10,7 +10,7 @@ import {
   Vector2 
 } from 'three';
 import { QuadcopterModel } from './QuadcopterModel';
-import { physicsQuaternionToThreeJsSimple, threeJsQuaternionToPhysics } from '@/lib/coordinateTransform';
+import { physicsQuaternionToThreeJsSimple } from '@/lib/coordinateTransform';
 import type { QuadcopterProps } from '@/lib/types/quadcopter';
 
 /**
@@ -36,6 +36,7 @@ export function Quadcopter({
   const currPosRef = useRef(new ThreeVector3());
   const prevQuatRef = useRef(new ThreeQuaternion());
   const currQuatRef = useRef(new ThreeQuaternion());
+  const wasPlayingRef = useRef(false);
   
   // Drag interaction refs
   const dragPlane = useRef(new Plane(new ThreeVector3(0, 1, 0), 0));
@@ -73,7 +74,7 @@ export function Quadcopter({
   };
   
   // Handle pointer down for dragging
-  const handlePointerDown = (event: any) => {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (!isInteractive || state.isPlaying) return;
     
     event.stopPropagation();
@@ -114,7 +115,7 @@ export function Quadcopter({
     gl.domElement.setPointerCapture(event.pointerId);
   };
   
-  const handlePointerMove = (event: any) => {
+  const handlePointerMove = (event: PointerEvent) => {
     if (!isDragging || !groupRef.current || !isInteractive) return;
     
     const mouse = new Vector2(
@@ -161,7 +162,7 @@ export function Quadcopter({
     }
   };
   
-  const handlePointerUp = (event: any) => {
+  const handlePointerUp = (event: PointerEvent) => {
     if (!isDragging) return;
     
     setIsDragging(false);
@@ -207,11 +208,23 @@ export function Quadcopter({
   
   // Reset animation when trajectory changes
   useEffect(() => {
-    timeRef.current = 0;
-    if (state.trajectory.length > 0) {
+    // Only reset time if we're starting fresh (not resuming)
+    if (state.trajectory.length > 0 && !wasPlayingRef.current) {
+      timeRef.current = 0;
       onUpdate({ currentFrame: 0 });
     }
   }, [state.trajectory]);
+  
+  // Handle play/pause state changes
+  useEffect(() => {
+    if (state.isPlaying && !wasPlayingRef.current) {
+      // Starting or resuming - set time to current frame's timestamp
+      if (state.trajectory.length > 0 && state.currentFrame < state.trajectory.length) {
+        timeRef.current = state.trajectory[state.currentFrame].timestamp;
+      }
+    }
+    wasPlayingRef.current = state.isPlaying;
+  }, [state.isPlaying, state.currentFrame, state.trajectory]);
   
   // Animation loop for trajectory playback
   useFrame((_, delta) => {
@@ -235,6 +248,7 @@ export function Quadcopter({
       if (timeRef.current >= state.trajectory[state.trajectory.length - 1].timestamp) {
         onUpdate({ isPlaying: false, currentFrame: 0 });
         timeRef.current = 0;
+        wasPlayingRef.current = false;
         return;
       }
       
@@ -265,18 +279,30 @@ export function Quadcopter({
       // Spherical linear interpolation for rotation
       groupRef.current.quaternion.slerpQuaternions(prevQuatRef.current, currQuatRef.current, alpha);
     } else if (!state.isPlaying) {
-      // When not playing, use the state position and rotation
-      const threePos = physicsToThreePosition(state.position);
-      groupRef.current.position.set(...threePos);
-      
-      // Convert Euler angles to quaternion
-      const euler = new Euler(
-        state.rotation[1],  // Pitch
-        state.rotation[2],  // Yaw
-        state.rotation[0],  // Roll
-        'YXZ'
-      );
-      groupRef.current.rotation.copy(euler);
+      // Check if we're paused mid-simulation
+      if (state.trajectory.length > 0 && state.currentFrame < state.trajectory.length) {
+        // We're paused - set position to current frame in trajectory
+        const currentPoint = state.trajectory[state.currentFrame];
+        const threePos = physicsToThreePosition(currentPoint.position);
+        groupRef.current.position.set(...threePos);
+        
+        // Set rotation from current frame
+        const quat = physicsQuaternionToThreeJsSimple(currentPoint.quaternion);
+        groupRef.current.quaternion.copy(quat);
+      } else {
+        // No trajectory or reset - use state position
+        const threePos = physicsToThreePosition(state.position);
+        groupRef.current.position.set(...threePos);
+        
+        // Convert Euler angles to quaternion
+        const euler = new Euler(
+          state.rotation[1],  // Pitch
+          state.rotation[2],  // Yaw
+          state.rotation[0],  // Roll
+          'YXZ'
+        );
+        groupRef.current.rotation.copy(euler);
+      }
     }
   });
   

@@ -31,9 +31,17 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
   // Load the GLTF model
   const gltf = useGLTF(MODEL_PATH);
   
+  // Clone the scene for this instance to avoid sharing
+  const clonedScene = useMemo(() => {
+    if (gltf && gltf.scene) {
+      return gltf.scene.clone();
+    }
+    return null;
+  }, [gltf]);
+  
   // Debug: Log model info when loaded
   useEffect(() => {
-    if (gltf) {
+    if (gltf && clonedScene) {
       // console.log('=== GLB MODEL LOADED ===');
       // console.log('Scene:', gltf.scene);
       // console.log('Animations:', gltf.animations);
@@ -41,7 +49,7 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       // console.log('Asset info:', gltf.asset);
       
       // Calculate bounding box to understand model size
-      const box = new Box3().setFromObject(gltf.scene);
+      const box = new Box3().setFromObject(clonedScene);
       const size = box.getSize(new ThreeVector3());
       const center = box.getCenter(new ThreeVector3());
       
@@ -57,7 +65,7 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       let vertexCount = 0;
       const materials = new Set();
       
-      gltf.scene.traverse((child) => {
+      clonedScene.traverse((child) => {
         if (child instanceof Mesh) {
           meshCount++;
           if (child.geometry.attributes.position) {
@@ -86,18 +94,17 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
       // console.log('Scaled model size:', scaledSize);
       
     }
-  }, [gltf, scale]);
+  }, [gltf, clonedScene, scale]);
 
   // Find and setup propellers when model loads
   useEffect(() => {
     // Only search for propellers if we haven't already found them
-    if (gltf.scene && modelConfig && propellerRefs.current.length === 0) {
-      console.log('=== TRAVERSING MODEL FOR PROPELLERS ===');
+    if (clonedScene && modelConfig && propellerRefs.current.length === 0) {
       // Find propellers in the model - look for cylinders that might be propellers
       propellerRefs.current = [];
       
       let objectCount = 0;
-      gltf.scene.traverse((child) => {
+      clonedScene.traverse((child) => {
         objectCount++;
         if (child instanceof Mesh) {
           const name = child.name.toLowerCase();
@@ -111,10 +118,8 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
         }
       });
       
-      console.log(`Traversed ${objectCount} objects in the model`);
-      console.log(`Found ${propellerRefs.current.length} propellers`);
     }
-  }, [gltf.scene, modelConfig]); // Use gltf.scene instead of gltf to be more specific
+  }, [clonedScene, modelConfig]); // Use clonedScene for this instance
   
   // Animate propellers - Y-axis for horizontal spinning (like helicopter blades)
   useFrame((state, delta) => {
@@ -127,11 +132,14 @@ export function QuadcopterModel({ modelId, showDebug = false }: QuadcopterModelP
   
   const scaleArray = Array.isArray(scale) ? scale : [scale, scale, scale];
   
+  // Don't render if clonedScene is not ready
+  if (!clonedScene) return null;
+  
   return (
     <group ref={group}>
       {/* The actual 3D model */}
       <primitive 
-        object={gltf.scene} 
+        object={clonedScene} 
         scale={scaleArray}
         rotation={rotation}
         position={centerOffset}

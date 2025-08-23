@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { useFrame, useThree, extend } from '@react-three/fiber';
+import { useFrame, useThree, extend, ThreeEvent } from '@react-three/fiber';
 import { Vector3 as ThreeVector3, Euler, Group, Mesh, Raycaster, Plane, Vector2, Matrix4 } from 'three';
+import * as THREE from 'three';
 import { QuadcopterModel } from './QuadcopterModel';
 
 interface InteractiveQuadcopterProps {
@@ -16,7 +17,7 @@ interface InteractiveQuadcopterProps {
 
 function PrimitiveQuadcopter() {
   function Propeller({ index }: { index: number }) {
-    const meshRef = useRef<any>(null);
+    const meshRef = useRef<THREE.Mesh>(null);
     
     useFrame((state, delta) => {
       if (meshRef.current) {
@@ -120,7 +121,7 @@ export function InteractiveQuadcopter({
   const offset = useRef(new ThreeVector3());
   const startRotation = useRef(new Euler());
   
-  const handlePointerDown = (event: any) => {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (isPlaying) return;
     
     event.stopPropagation();
@@ -162,7 +163,7 @@ export function InteractiveQuadcopter({
     gl.domElement.setPointerCapture(event.pointerId);
   };
   
-  const handlePointerMove = (event: any) => {
+  const handlePointerMove = (event: PointerEvent) => {
     if (!isDragging || !groupRef.current || isPlaying) return;
     
     const mouse = new Vector2(
@@ -210,7 +211,7 @@ export function InteractiveQuadcopter({
     }
   };
   
-  const handlePointerUp = (event: any) => {
+  const handlePointerUp = (event: PointerEvent) => {
     if (!isDragging) return;
     
     setIsDragging(false);
@@ -239,7 +240,7 @@ export function InteractiveQuadcopter({
         window.removeEventListener('pointerup', handleGlobalPointerUp);
       };
     }
-  }, [isDragging, dragMode]);
+  }, [isDragging, dragMode, handlePointerMove, handlePointerUp]);
   
   // Update cursor based on hover
   useEffect(() => {

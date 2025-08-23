@@ -127,16 +127,16 @@ export function usePrecomputedSimulation({
         
         if (outOfBounds) {
           console.log(`=== TERMINATING EARLY - OUT OF BOUNDS ===`);
-          console.log(`Step: ${step}, Position: [${result.position[0].toFixed(2)}, ${result.position[1].toFixed(2)}, ${result.position[2].toFixed(2)}]`);
-          console.log(`Limits: [-4, 4] on all axes`);
+          // console.log(`Step: ${step}, Position: [${result.position[0].toFixed(2)}, ${result.position[1].toFixed(2)}, ${result.position[2].toFixed(2)}]`);
+          // console.log(`Limits: [-4, 4] on all axes`);
           break;
         }
       }
       
       console.log('=== TRAJECTORY COMPLETE ===');
-      console.log(`Total points: ${points.length}`);
-      console.log('First point:', points[0]);
-      console.log('Last point:', points[points.length - 1]);
+      // console.log(`Total points: ${points.length}`);
+      // console.log('First point:', points[0]);
+      // console.log('Last point:', points[points.length - 1]);
       setTrajectory(points);
       
     } catch (error) {
@@ -150,19 +150,13 @@ export function usePrecomputedSimulation({
   // Reset trajectory
   const reset = useCallback(() => {
     console.log('=== RESET TRAJECTORY ===');
-    console.log('Clearing trajectory, previous length:', trajectory.length);
+    // console.log('Clearing trajectory, previous length:', trajectory.length);
     setTrajectory([]);
     setError(null);
   }, [trajectory.length]);
   
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (inferenceRef.current) {
-        inferenceRef.current.dispose();
-      }
-    };
-  }, []);
+  // Note: We don't dispose the ONNX instance on cleanup because it's a singleton
+  // shared across the entire app. Disposing it would break other components.
   
   return {
     trajectory,

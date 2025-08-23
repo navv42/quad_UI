@@ -28,10 +28,12 @@ interface ControlPanelProps {
   // Actions
   handlePlayPause: () => void;
   handleReset: () => void;
+  handleZeroPosition: () => void;
   
   // Display data
   currentState?: any;
   currentAction?: [number, number, number, number];
+  isPausedMidSimulation?: boolean;
 }
 
 export function ControlPanel({
@@ -41,8 +43,8 @@ export function ControlPanel({
   setInitialRoll, setInitialPitch, setInitialYaw,
   isPlaying, isComputing, trajectory,
   simSpeed, setSimSpeed,
-  handlePlayPause, handleReset,
-  currentState, currentAction
+  handlePlayPause, handleReset, handleZeroPosition,
+  currentState, currentAction, isPausedMidSimulation
 }: ControlPanelProps) {
   return (
     <div className={styles.panel}>
@@ -57,6 +59,30 @@ export function ControlPanel({
         fontStyle: 'italic'
       }}>
         Left-drag to move • Right-drag to rotate
+      </div>
+      
+      {/* Zero Position Button */}
+      <div style={{
+        textAlign: 'center',
+        marginTop: '8px',
+        marginBottom: '8px'
+      }}>
+        <button
+          onClick={handleZeroPosition}
+          disabled={isPlaying || isComputing}
+          style={{
+            padding: '6px 12px',
+            fontSize: '12px',
+            backgroundColor: '#444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isPlaying || isComputing ? 'not-allowed' : 'pointer',
+            opacity: isPlaying || isComputing ? 0.5 : 1
+          }}
+        >
+          Zero Position
+        </button>
       </div>
       
       {/* Position Controls */}
@@ -157,7 +183,7 @@ export function ControlPanel({
             disabled={isComputing}
             className={styles.primaryButton}
           >
-            {isComputing ? 'Computing...' : isPlaying ? 'Pause' : 'Play'}
+            {isComputing ? 'Computing...' : isPlaying ? 'Pause' : (isPausedMidSimulation ? 'Resume' : 'Play')}
           </button>
           <button 
             onClick={handleReset}
