@@ -8,7 +8,6 @@ import type {
   QuadcopterState,
   Action,
   SimulationData,
-  PhysicsStepResult,
 } from '@/lib/types/simulation';
 
 export interface SimulationStep {

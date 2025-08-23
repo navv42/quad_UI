@@ -21,7 +21,6 @@ interface ControlPanelProps {
   // Simulation controls
   isPlaying: boolean;
   isComputing: boolean;
-  trajectory: any[];
   simSpeed: number;
   setSimSpeed: (value: number) => void;
   
@@ -31,7 +30,6 @@ interface ControlPanelProps {
   handleZeroPosition: () => void;
   
   // Display data
-  currentState?: any;
   currentAction?: [number, number, number, number];
   isPausedMidSimulation?: boolean;
 }
@@ -41,10 +39,10 @@ export function ControlPanel({
   setInitialX, setInitialY, setInitialZ,
   initialRoll, initialPitch, initialYaw,
   setInitialRoll, setInitialPitch, setInitialYaw,
-  isPlaying, isComputing, trajectory,
+  isPlaying, isComputing,
   simSpeed, setSimSpeed,
   handlePlayPause, handleReset, handleZeroPosition,
-  currentState, currentAction, isPausedMidSimulation
+  currentAction, isPausedMidSimulation
 }: ControlPanelProps) {
   return (
     <div className={styles.panel}>

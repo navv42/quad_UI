@@ -101,7 +101,6 @@ export function PrecomputedTrajectory({
 }: PrecomputedTrajectoryProps) {
   const meshRef = useRef<Group>(null);
   const timeRef = useRef(0);
-  const [currentIndex, setCurrentIndex] = useState(0);
   
   // Set proper Euler order for aviation controls
   useEffect(() => {

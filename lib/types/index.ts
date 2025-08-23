@@ -162,7 +162,7 @@ export interface InteractiveQuadcopterProps {
 export interface StepTrajectoryProps {
   trajectory: TrajectoryPoint[];
   currentStep: number;
-  onStateUpdate: (state: any) => void;
+  onStateUpdate: (state: Partial<QuadcopterState>) => void;
 }
 
 // ============================================================================

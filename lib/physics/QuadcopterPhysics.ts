@@ -9,7 +9,6 @@ import type {
   Quaternion,
   Action,
   SimulationParams,
-  ForcesTorques,
   PhysicsStepResult,
 } from '@/lib/types/simulation';
 
@@ -147,7 +146,6 @@ export class QuadcopterPhysics {
     const torque: Vector3 = [τx, τy, τz];
     
     // Extract state components
-    const pos: Vector3 = [stateVec[0], stateVec[1], stateVec[2]];
     const vel: Vector3 = [stateVec[3], stateVec[4], stateVec[5]];
     const q: Quaternion = [stateVec[6], stateVec[7], stateVec[8], stateVec[9]];
     const ω: Vector3 = [stateVec[10], stateVec[11], stateVec[12]];
