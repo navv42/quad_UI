@@ -11,6 +11,7 @@ import { ONNXInference } from '@/lib/inference/ONNXInference';
 import { Quadcopter } from '@/components/3d/Quadcopter';
 import { Trail } from '@/components/3d/Trail';
 import { ControlPanel } from '@/components/ui/ControlPanel';
+import { ControllerDisplay } from '@/components/ui/ControllerDisplay';
 
 // Hooks and utilities
 import { usePrecomputedSimulation } from '@/hooks/usePrecomputedSimulation';
@@ -49,8 +50,9 @@ export function SingleMode() {
   
   // Camera and controls
   const [orbitEnabled, setOrbitEnabled] = useState(true);
-  const [simSpeed, setSimSpeed] = useState(1.0);
+  const [simSpeed, setSimSpeed] = useState(0.5);
   const [currentAction, setCurrentAction] = useState<[number, number, number, number]>([0, 0, 0, 0]);
+  const [interpolatedAction, setInterpolatedAction] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   
   // Quadcopter state management
   const [quadcopter, setQuadcopter] = useState<QuadcopterState>({
@@ -140,6 +142,7 @@ export function SingleMode() {
     
     resetTrajectory();
     setCurrentAction([0, 0, 0, 0]);
+    setInterpolatedAction([0, 0, 0, 0]);
     setIsPausedMidSimulation(false);
   };
   
@@ -157,6 +160,7 @@ export function SingleMode() {
     
     resetTrajectory();
     setCurrentAction([0, 0, 0, 0]);
+    setInterpolatedAction([0, 0, 0, 0]);
     setIsPausedMidSimulation(false);
   };
 
@@ -196,6 +200,7 @@ export function SingleMode() {
       setIsPausedMidSimulation(true);
       updateQuadcopter({ isPlaying: false });
       setCurrentAction([0, 0, 0, 0]);
+      setInterpolatedAction([0, 0, 0, 0]);
     }
   };
   
@@ -274,8 +279,8 @@ export function SingleMode() {
             trajectory={quadcopter.trajectory}
             currentFrame={quadcopter.currentFrame}
             color="#00ff88"
-            opacity={0.6}
-            lineWidth={2}
+            opacity={1.0}
+            lineWidth={10}
           />
         )}
         
@@ -287,6 +292,7 @@ export function SingleMode() {
           simSpeed={simSpeed}
           onDragStart={() => setOrbitEnabled(false)}
           onDragEnd={() => setOrbitEnabled(true)}
+          onActionUpdate={setInterpolatedAction}
         />
         
         <OrbitControls 
@@ -330,9 +336,24 @@ export function SingleMode() {
         handlePlayPause={handlePlayPause}
         handleReset={handleReset}
         handleZeroPosition={handleZeroPosition}
-        currentAction={currentAction}
+        currentAction={interpolatedAction}
         isPausedMidSimulation={isPausedMidSimulation}
       />
+      
+      {/* Controller Display - Fixed at bottom right */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 1000,
+      }}>
+        <ControllerDisplay
+          throttle={interpolatedAction[0]}
+          pitch={-interpolatedAction[1]}
+          roll={-interpolatedAction[2]}
+          yaw={interpolatedAction[3]}
+        />
+      </div>
       
       {/* ONNX Loading indicator */}
       {isOnnxLoading && (

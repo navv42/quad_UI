@@ -38,4 +38,5 @@ export interface QuadcopterProps {
   simSpeed: number;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onActionUpdate?: (action: [number, number, number, number]) => void;
 }

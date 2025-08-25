@@ -206,51 +206,6 @@ export function ControlPanel({
         </div>
 
       </div>
-      
-
-      
-      {/* Action Display */}
-      {currentAction && (
-        <div className={styles.section}>
-          <h4 className={styles.sectionTitle}>Control Actions</h4>
-          <div className={styles.actionBars}>
-            <ActionBar label="Throttle" value={currentAction[0]} />
-            <ActionBar label="Pitch" value={-currentAction[1]} />
-            <ActionBar label="Roll" value={-currentAction[2]} />
-            <ActionBar label="Yaw" value={currentAction[3]} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ActionBar({ label, value }: { label: string; value: number }) {
-  // Clamp value to ensure it's within [-1, 1]
-  const clampedValue = Math.max(-1, Math.min(1, value));
-  
-  // Calculate the height of the bar as a percentage of half the container
-  // Since the bar goes from center (0) to either top (-1) or bottom (+1)
-  const barHeight = Math.abs(clampedValue) * 50; // 0 to 50% of container
-  
-  const isPositive = clampedValue > 0;
-  
-  return (
-    <div className={styles.actionBar}>
-      <span className={styles.actionLabel}>{label}</span>
-      <div className={styles.actionBarContainer}>
-        <div className={styles.actionBarBackground} />
-        <div 
-          className={styles.actionBarFill}
-          style={{
-            height: `${barHeight}%`,
-            bottom: isPositive ? '50%' : 'auto',
-            top: isPositive ? 'auto' : '50%',
-            backgroundColor: isPositive ? '#00ff00' : '#ff6b6b',
-          }}
-        />
-        <div className={styles.actionBarCenter} />
-      </div>
     </div>
   );
 }

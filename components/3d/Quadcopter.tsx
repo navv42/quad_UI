@@ -22,7 +22,8 @@ export function Quadcopter({
   isInteractive,
   simSpeed,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  onActionUpdate
 }: QuadcopterProps) {
   const groupRef = useRef<Group>(null);
   const { camera, gl, size } = useThree();
@@ -249,6 +250,9 @@ export function Quadcopter({
         onUpdate({ isPlaying: false, currentFrame: 0 });
         timeRef.current = 0;
         wasPlayingRef.current = false;
+        if (onActionUpdate) {
+          onActionUpdate([0, 0, 0, 0]);
+        }
         return;
       }
       
@@ -278,6 +282,17 @@ export function Quadcopter({
       
       // Spherical linear interpolation for rotation
       groupRef.current.quaternion.slerpQuaternions(prevQuatRef.current, currQuatRef.current, alpha);
+      
+      // Interpolate actions for smooth display
+      if (onActionUpdate && prev.action && next.action) {
+        const interpolatedAction: [number, number, number, number] = [
+          prev.action[0] + (next.action[0] - prev.action[0]) * alpha,
+          prev.action[1] + (next.action[1] - prev.action[1]) * alpha,
+          prev.action[2] + (next.action[2] - prev.action[2]) * alpha,
+          prev.action[3] + (next.action[3] - prev.action[3]) * alpha
+        ];
+        onActionUpdate(interpolatedAction);
+      }
     } else if (!state.isPlaying) {
       // Check if we're paused mid-simulation
       if (state.trajectory.length > 0 && state.currentFrame < state.trajectory.length) {
@@ -289,6 +304,11 @@ export function Quadcopter({
         // Set rotation from current frame
         const quat = physicsQuaternionToThreeJsSimple(currentPoint.quaternion);
         groupRef.current.quaternion.copy(quat);
+        
+        // Set action to current frame's action (no interpolation when paused)
+        if (onActionUpdate && currentPoint.action) {
+          onActionUpdate(currentPoint.action);
+        }
       } else {
         // No trajectory or reset - use state position
         const threePos = physicsToThreePosition(state.position);
@@ -302,6 +322,11 @@ export function Quadcopter({
           'YXZ'
         );
         groupRef.current.rotation.copy(euler);
+        
+        // Reset actions to zero when not in trajectory
+        if (onActionUpdate) {
+          onActionUpdate([0, 0, 0, 0]);
+        }
       }
     }
   });

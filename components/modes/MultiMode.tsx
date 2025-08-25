@@ -58,7 +58,7 @@ export function MultiMode() {
   
   // Camera and controls
   const [orbitEnabled, setOrbitEnabled] = useState(true);
-  const [simSpeed, setSimSpeed] = useState(1.0);
+  const [simSpeed, setSimSpeed] = useState(0.5);
   
   // Multi-quadcopter state
   const [quadcopterCount, setQuadcopterCount] = useState(2);
@@ -309,7 +309,7 @@ export function MultiMode() {
                 trajectory={quad.trajectory}
                 currentFrame={quad.currentFrame}
                 color={getQuadcopterColor(index)}
-                opacity={0.6}
+                opacity={1.9}
                 lineWidth={2}
               />
             )}

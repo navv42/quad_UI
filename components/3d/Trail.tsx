@@ -16,7 +16,7 @@ export function Trail({
   currentFrame, 
   color = '#00ff00',
   opacity = 0.6,
-  lineWidth = 2
+  lineWidth = 10
 }: TrailProps) {
   const lineRef = useRef<Line>(null);
   
