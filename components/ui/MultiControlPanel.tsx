@@ -16,7 +16,7 @@ interface MultiControlPanelProps {
   handlePlayPause: () => void;
   handleReset: () => void;
   handleRandomize: () => void;
-  handleFormation: () => void;
+  handleFormation: (name?: string) => void;
   
   // Display data
   isPausedMidSimulation?: boolean;
@@ -56,23 +56,74 @@ export function MultiControlPanel({
           />
         </div>
         <div className={styles.section}>
-          <h1 className={styles.sectionTitle}>Initial State</h1>
-          
-          <button 
+          <h1 className={styles.sectionTitle}>Formations</h1>
+          <button
             onClick={handleRandomize}
             disabled={isPlaying || isComputing}
-            className={styles.randomizeButton}
-          >
+            className={styles.randomizeButton}>
             Random
           </button>
-          
-          <button 
-            onClick={handleFormation}
+          <button
+            onClick={() => handleFormation()}
             disabled={isPlaying || isComputing}
-            className={styles.formationButton}
-          >
+            className={styles.randomizeButton}>
             Random Pattern
           </button>
+          <div className={styles.formationGrid}>
+            <button 
+              onClick={() => handleFormation('upsidedown')}
+              disabled={isPlaying || isComputing}
+              className={styles.formationButton}
+              title="All quadcopters upside down in a grid"
+            >
+              Upside Down
+            </button>
+            
+            <button 
+              onClick={() => handleFormation('diagonal')}
+              disabled={isPlaying || isComputing}
+              className={styles.formationButton}
+              title="Diagonal cascade from corner to corner"
+            >
+              Diagonal
+            </button>
+            
+            <button 
+              onClick={() => handleFormation('figure8')}
+              disabled={isPlaying || isComputing}
+              className={styles.formationButton}
+              title="Figure eight pattern"
+            >
+              Figure 8
+            </button>
+            
+            <button 
+              onClick={() => handleFormation('circle')}
+              disabled={isPlaying || isComputing}
+              className={styles.formationButton}
+              title="Circle formation facing center"
+            >
+              Circle
+            </button>
+            
+            <button 
+              onClick={() => handleFormation('spiral')}
+              disabled={isPlaying || isComputing}
+              className={styles.formationButton}
+              title="Ascending spiral formation"
+            >
+              Spiral
+            </button>
+            
+            <button 
+              onClick={handleRandomize}
+              disabled={isPlaying || isComputing}
+              className={styles.formationButton}
+              title="Completely random positions and orientations"
+            >
+              Chaos
+            </button>
+          </div>
         </div>
       </div>
       
@@ -109,21 +160,6 @@ export function MultiControlPanel({
         </div>
       </div>
       
-      {/* Quadcopter Status Display */}
-      <div className={styles.section}>
-        <h4 className={styles.sectionTitle}>Fleet Status</h4>
-        <div className={styles.statusGrid}>
-          {Array.from({ length: quadcopterCount }, (_, i) => (
-            <div key={i} className={styles.statusItem}>
-              <div 
-                className={styles.statusIndicator}
-                style={{ backgroundColor: getQuadcopterColor(i) }}
-              />
-              <span>Quad {i + 1}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

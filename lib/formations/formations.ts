@@ -92,7 +92,7 @@ export function generateLineFormation(numQuads: number, spacing = 0.3): Formatio
 }
 
 /**
- * Grid Formation - square-like grid arrangement
+ * Grid Formation - square-like grid arrangement with random Y variation
  */
 export function generateGridFormation(numQuads: number, spacing = 0.4): Formation[] {
   const formation: Formation[] = [];
@@ -113,9 +113,11 @@ export function generateGridFormation(numQuads: number, spacing = 0.4): Formatio
   for (let i = 0; i < numQuads; i++) {
     const row = Math.floor(i / cols);
     const col = i % cols;
+    // Randomize Y position between -0.5 and 0.8
+    const y = -0.5 + Math.random() * 1.3;
     const position = new THREE.Vector3(
       startX + col * spacing,
-      0.5,
+      y,
       startZ + row * spacing
     );
     formation.push({ position, orientation });
@@ -237,39 +239,6 @@ export function generateDiamondFormation(numQuads: number, size = 0.5): Formatio
   return formation;
 }
 
-/**
- * Star Formation - star pattern
- */
-export function generateStarFormation(numQuads: number, outerRadius = 0.8, innerRadius = 0.3): Formation[] {
-  const formation: Formation[] = [];
-  
-  if (numQuads === 1) {
-    formation.push({ 
-      position: new THREE.Vector3(0, 0.5, 0), 
-      orientation: new THREE.Quaternion() 
-    });
-    return formation;
-  }
-
-  const angleStep = (2 * Math.PI) / numQuads;
-  
-  for (let i = 0; i < numQuads; i++) {
-    const angle = i * angleStep - Math.PI / 2; // Start from top
-    const radius = i % 2 === 0 ? outerRadius : innerRadius;
-    const x = radius * Math.cos(angle);
-    const z = radius * Math.sin(angle);
-    
-    const position = new THREE.Vector3(x, 0.5, z);
-    
-    // Face outward from center
-    const facingAngle = angle;
-    const orientation = eulerToQuaternion(0, facingAngle, 0);
-    
-    formation.push({ position, orientation });
-  }
-  
-  return formation;
-}
 
 /**
  * Helix Formation - double helix
@@ -309,12 +278,12 @@ export function generateHelixFormation(numQuads: number, radius = 0.4, height = 
 export function generateWaveFormation(numQuads: number, wavelength = 1.6, amplitude = 0.3): Formation[] {
   const formation: Formation[] = [];
   const spacing = wavelength / Math.max(numQuads - 1, 1);
-  const startX = -Math.min(wavelength / 2, 0.9);
+  const startX = -Math.min(wavelength / 2, 1.0);
   
   for (let i = 0; i < numQuads; i++) {
-    const x = Math.min(Math.max(startX + i * spacing, -0.9), 0.9);
+    const x = Math.min(Math.max(startX + i * spacing, -1.0), 1.0);
     const phase = (i / Math.max(numQuads - 1, 1)) * 2 * Math.PI;
-    const y = Math.min(Math.max(0 + amplitude * Math.sin(phase), -0.9), 0.9);
+    const y = Math.min(Math.max(0 + amplitude * Math.sin(phase), -1.0), 1.0);
     const z = 0;
     
     const position = new THREE.Vector3(x, y, z);
@@ -330,54 +299,6 @@ export function generateWaveFormation(numQuads: number, wavelength = 1.6, amplit
   return formation;
 }
 
-/**
- * Cube Formation - 3D cube vertices
- */
-export function generateCubeFormation(numQuads: number, size = 0.5): Formation[] {
-  const formation: Formation[] = [];
-  
-  // Cube vertices - already within [-0.5, 0.5] range
-  const vertices = [
-    new THREE.Vector3(-size, -size, -size),
-    new THREE.Vector3(size, -size, -size),
-    new THREE.Vector3(size, size, -size),
-    new THREE.Vector3(-size, size, -size),
-    new THREE.Vector3(-size, -size, size),
-    new THREE.Vector3(size, -size, size),
-    new THREE.Vector3(size, size, size),
-    new THREE.Vector3(-size, size, size),
-  ];
-  
-  // No offset needed, already centered
-  
-  // Distribute quads among vertices
-  for (let i = 0; i < numQuads && i < vertices.length; i++) {
-    // Face outward from cube center
-    const direction = vertices[i].clone().sub(new THREE.Vector3(0, 0, 0)).normalize();
-    const facingAngle = Math.atan2(direction.x, direction.z);
-    const tilt = Math.asin(-direction.y);
-    
-    formation.push({ 
-      position: vertices[i], 
-      orientation: eulerToQuaternion(0, facingAngle, tilt)
-    });
-  }
-  
-  // If more quads than vertices, place extras on edges
-  if (numQuads > 8) {
-    const extraQuads = numQuads - 8;
-    for (let i = 0; i < extraQuads && i < 4; i++) {
-      const t = 0.5;
-      const edgePos = new THREE.Vector3().lerpVectors(vertices[i], vertices[(i + 1) % 4], t);
-      formation.push({
-        position: edgePos,
-        orientation: new THREE.Quaternion()
-      });
-    }
-  }
-  
-  return formation;
-}
 
 /**
  * Sphere Surface Formation - distribute quads on surface of sphere
@@ -504,6 +425,279 @@ export function generateRandomChaosFormation(numQuads: number): Formation[] {
   return formation;
 }
 
+/**
+ * Upside Down Grid - flat grid with all quadcopters inverted
+ */
+export function generateUpsideDownGridFormation(numQuads: number, spacing = 0.4): Formation[] {
+  const formation: Formation[] = [];
+  const cols = Math.ceil(Math.sqrt(numQuads));
+  const rows = Math.ceil(numQuads / cols);
+
+  // Adjust spacing to fit within bounds
+  const maxDimension = 1.8;
+  spacing = Math.min(spacing, maxDimension / Math.max(cols - 1, rows - 1, 1));
+  
+  const totalWidth = (cols - 1) * spacing;
+  const totalDepth = (rows - 1) * spacing;
+  const startX = -totalWidth / 2;
+  const startZ = -totalDepth / 2;
+
+  // Upside down orientation (roll = PI)
+  const orientation = eulerToQuaternion(0, Math.PI, 0);
+  const z = Math.random()
+  for (let i = 0; i < numQuads; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const position = new THREE.Vector3(
+      startX + col * spacing,
+      startZ + row * spacing,
+      z
+    );
+    formation.push({ position, orientation });
+  }
+  return formation;
+}
+
+/**
+ * Corner Convergence - all quads at extreme corners pointing to center
+ */
+export function generateCornerConvergenceFormation(numQuads: number): Formation[] {
+  const formation: Formation[] = [];
+  
+  // 8 corners of the bounding cube
+  const corners = [
+    new THREE.Vector3(-1, -1, -1),
+    new THREE.Vector3(1, -1, -1),
+    new THREE.Vector3(-1, 1, -1),
+    new THREE.Vector3(1, 1, -1),
+    new THREE.Vector3(-1, -1, 1),
+    new THREE.Vector3(1, -1, 1),
+    new THREE.Vector3(-1, 1, 1),
+    new THREE.Vector3(1, 1, 1),
+  ];
+  
+  for (let i = 0; i < numQuads; i++) {
+    // Distribute quads among corners, with some variation
+    const cornerIndex = i % 8;
+    const corner = corners[cornerIndex].clone();
+    
+    // Add small random offset to prevent exact overlap when many quads
+    const offset = 0.1;
+    corner.x += (Math.random() - 0.5) * offset;
+    corner.y += (Math.random() - 0.5) * offset;
+    corner.z += (Math.random() - 0.5) * offset;
+    
+    // Clamp to bounds
+    corner.x = Math.max(-1, Math.min(1, corner.x));
+    corner.y = Math.max(-1, Math.min(1, corner.y));
+    corner.z = Math.max(-1, Math.min(1, corner.z));
+    
+    // Point toward center
+    const toCenter = new THREE.Vector3(0, 0, 0).sub(corner).normalize();
+    const facingAngle = Math.atan2(toCenter.x, toCenter.z);
+    const tilt = Math.asin(-toCenter.y);
+    
+    formation.push({
+      position: corner,
+      orientation: eulerToQuaternion(0, facingAngle, tilt)
+    });
+  }
+  
+  return formation;
+}
+
+/**
+ * Vortex Formation - spiral tornado from bottom to top
+ */
+export function generateVortexFormation(numQuads: number): Formation[] {
+  const formation: Formation[] = [];
+  const rotations = 3; // Number of full rotations
+  
+  for (let i = 0; i < numQuads; i++) {
+    const t = i / Math.max(numQuads - 1, 1);
+    
+    // Spiral parameters
+    const angle = t * rotations * 2 * Math.PI;
+    // Radius decreases as we go up
+    const radius = (1 - t * 0.8) * 0.9;
+    
+    const x = radius * Math.cos(angle);
+    const z = radius * Math.sin(angle);
+    // Height from bottom to top
+    const y = -1 + t * 2;
+    
+    const position = new THREE.Vector3(x, y, z);
+    
+    // Tilt outward and spin
+    const facingAngle = angle + Math.PI / 2;
+    const tilt = THREE.MathUtils.degToRad(30) * (1 - t); // Less tilt at top
+    const roll = t * Math.PI; // Rolling as they rise
+    
+    const orientation = eulerToQuaternion(roll, facingAngle, tilt);
+    
+    formation.push({ position, orientation });
+  }
+  
+  return formation;
+}
+
+/**
+ * Wall Formation - vertical wall at maximum Z position
+ */
+export function generateWallFormation(numQuads: number): Formation[] {
+  const formation: Formation[] = [];
+  const cols = Math.ceil(Math.sqrt(numQuads));
+  const rows = Math.ceil(numQuads / cols);
+  
+  const spacingX = 1.8 / Math.max(cols - 1, 1);
+  const spacingY = 1.8 / Math.max(rows - 1, 1);
+  
+  for (let i = 0; i < numQuads; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    
+    const x = -0.9 + col * spacingX;
+    const y = -0.9 + row * spacingY;
+    const z = 1.0; // Maximum Z position
+    
+    const position = new THREE.Vector3(x, y, z);
+    
+    // Face forward (away from wall)
+    const orientation = eulerToQuaternion(0, 0, 0);
+    
+    formation.push({ position, orientation });
+  }
+  
+  return formation;
+}
+
+/**
+ * Infinity Symbol - horizontal infinity pattern
+ */
+export function generateInfinityFormation(numQuads: number): Formation[] {
+  const formation: Formation[] = [];
+  const scale = 0.8;
+  
+  for (let i = 0; i < numQuads; i++) {
+    const t = (i / numQuads) * 2 * Math.PI;
+    
+    // Parametric equation for infinity symbol (lemniscate)
+    const denominator = 1 + Math.sin(t) * Math.sin(t);
+    const x = scale * Math.cos(t) / denominator;
+    const z = scale * Math.sin(t) * Math.cos(t) / denominator;
+    // Add vertical variation
+    const y = Math.sin(t * 3) * 0.3;
+    
+    const position = new THREE.Vector3(x, y, z);
+    
+    // Calculate tangent for orientation
+    const dt = 0.01;
+    const nextT = t + dt;
+    const nextDenom = 1 + Math.sin(nextT) * Math.sin(nextT);
+    const nextX = scale * Math.cos(nextT) / nextDenom;
+    const nextZ = scale * Math.sin(nextT) * Math.cos(nextT) / nextDenom;
+    
+    const facingAngle = Math.atan2(nextX - x, nextZ - z);
+    // Bank into curves
+    const roll = THREE.MathUtils.degToRad(25) * Math.sin(t * 2);
+    
+    const orientation = eulerToQuaternion(roll, facingAngle, 0);
+    
+    formation.push({ position, orientation });
+  }
+  
+  return formation;
+}
+
+/**
+ * DNA Helix - double helix with crosslinks
+ */
+export function generateDNAHelixFormation(numQuads: number): Formation[] {
+  const formation: Formation[] = [];
+  const rotations = 2.5;
+  const radius = 0.6;
+  const height = 1.6;
+  
+  for (let i = 0; i < numQuads; i++) {
+    const t = i / Math.max(numQuads - 1, 1);
+    const angle = t * rotations * 2 * Math.PI;
+    
+    // Alternate between two strands and crosslinks
+    const strandPattern = i % 3;
+    
+    let x, y, z;
+    let orientation;
+    
+    if (strandPattern < 2) {
+      // Main strands
+      const strandOffset = strandPattern * Math.PI; // 180 degree offset for second strand
+      x = radius * Math.cos(angle + strandOffset);
+      z = radius * Math.sin(angle + strandOffset);
+      y = -0.8 + t * height;
+      
+      // Face along the helix
+      const facingAngle = angle + strandOffset + Math.PI / 2;
+      orientation = eulerToQuaternion(0, facingAngle, THREE.MathUtils.degToRad(15));
+    } else {
+      // Crosslinks between strands
+      const linkT = Math.floor(i / 3) / Math.max(Math.floor(numQuads / 3), 1);
+      const linkAngle = linkT * rotations * 2 * Math.PI;
+      
+      // Position between the two strands
+      x = 0;
+      z = 0;
+      y = -0.8 + linkT * height;
+      
+      // Rotate to connect strands
+      orientation = eulerToQuaternion(0, linkAngle, 0);
+    }
+    
+    const position = new THREE.Vector3(x, y, z);
+    formation.push({ position, orientation });
+  }
+  
+  return formation;
+}
+
+/**
+ * Expanding Sphere - quads start at center and expand outward
+ */
+export function generateExpandingSphereFormation(numQuads: number): Formation[] {
+  const formation: Formation[] = [];
+  
+  // Use golden angle for even distribution
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  
+  for (let i = 0; i < numQuads; i++) {
+    const t = i / Math.max(numQuads - 1, 1);
+    
+    // Fibonacci sphere points
+    const y = 1 - (i / (numQuads - 1)) * 2;
+    const radiusAtY = Math.sqrt(1 - y * y);
+    const theta = goldenAngle * i;
+    
+    // Vary radius based on index (expanding effect)
+    const radius = 0.2 + t * 0.8;
+    
+    const x = Math.cos(theta) * radiusAtY * radius;
+    const z = Math.sin(theta) * radiusAtY * radius;
+    const scaledY = y * radius;
+    
+    const position = new THREE.Vector3(x, scaledY, z);
+    
+    // Face outward with some spin
+    const facingAngle = Math.atan2(x, z);
+    const tiltAngle = Math.asin(scaledY / radius);
+    const roll = t * Math.PI * 2; // Spinning as they expand
+    
+    const orientation = eulerToQuaternion(roll, facingAngle, tiltAngle);
+    
+    formation.push({ position, orientation });
+  }
+  
+  return formation;
+}
+
 // List of all formation generators
 const formationGenerators = [
   generateCircleFormation,
@@ -513,14 +707,19 @@ const formationGenerators = [
   generateVFormation,
   generateSpiralFormation,
   generateDiamondFormation,
-  generateStarFormation,
   generateHelixFormation,
   generateWaveFormation,
-  generateCubeFormation,
   generateSphereFormation,
   generateDiagonalCascadeFormation,
   generateFigureEightFormation,
   generateRandomChaosFormation,
+  generateUpsideDownGridFormation,
+  generateCornerConvergenceFormation,
+  generateVortexFormation,
+  generateWallFormation,
+  generateInfinityFormation,
+  generateDNAHelixFormation,
+  generateExpandingSphereFormation,
 ];
 
 /**
@@ -529,6 +728,8 @@ const formationGenerators = [
 export function getRandomFormation(numQuads: number): Formation[] {
   const randomIndex = Math.floor(Math.random() * formationGenerators.length);
   const generator = formationGenerators[randomIndex];
+  // const generator = formationGenerators[13];
+  console.log(generator.toString())
   return generator(numQuads);
 }
 
@@ -536,6 +737,7 @@ export function getRandomFormation(numQuads: number): Formation[] {
  * Get formation by name
  */
 export function getFormationByName(name: string, numQuads: number): Formation[] {
+  
   switch (name.toLowerCase()) {
     case 'circle':
       return generateCircleFormation(numQuads);
@@ -552,14 +754,10 @@ export function getFormationByName(name: string, numQuads: number): Formation[] 
       return generateSpiralFormation(numQuads);
     case 'diamond':
       return generateDiamondFormation(numQuads);
-    case 'star':
-      return generateStarFormation(numQuads);
     case 'helix':
       return generateHelixFormation(numQuads);
     case 'wave':
       return generateWaveFormation(numQuads);
-    case 'cube':
-      return generateCubeFormation(numQuads);
     case 'sphere':
       return generateSphereFormation(numQuads);
     case 'diagonal':
@@ -571,6 +769,25 @@ export function getFormationByName(name: string, numQuads: number): Formation[] 
     case 'chaos':
     case 'random':
       return generateRandomChaosFormation(numQuads);
+    case 'upsidedown':
+    case 'upside-down':
+      return generateUpsideDownGridFormation(numQuads);
+    case 'corner':
+    case 'corners':
+      return generateCornerConvergenceFormation(numQuads);
+    case 'vortex':
+    case 'tornado':
+      return generateVortexFormation(numQuads);
+    case 'wall':
+      return generateWallFormation(numQuads);
+    case 'infinity':
+      return generateInfinityFormation(numQuads);
+    case 'dna':
+    case 'dnahelix':
+      return generateDNAHelixFormation(numQuads);
+    case 'expanding':
+    case 'expandingsphere':
+      return generateExpandingSphereFormation(numQuads);
     default:
       return getRandomFormation(numQuads);
   }

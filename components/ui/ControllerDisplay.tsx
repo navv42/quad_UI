@@ -17,14 +17,9 @@ export function ControllerDisplay({ throttle, yaw, pitch, roll }: ControllerDisp
   const rightX = roll * 32.5;
   const rightY = -pitch * 32.5;
   
-  // Calculate angle and length for the line
-  const leftAngle = Math.atan2(leftY, leftX) * (180 / Math.PI);
-  const leftLength = Math.sqrt(leftX * leftX + leftY * leftY);
-  
-  const rightAngle = Math.atan2(rightY, rightX) * (180 / Math.PI);
-  const rightLength = Math.sqrt(rightX * rightX + rightY * rightY);
   
   return (
+    <div className={styles.controllerWrapper}>
     <div className={styles.controllerBody}>
       {/* Simple antenna */}
       <div className={styles.antenna} />
@@ -122,6 +117,7 @@ export function ControllerDisplay({ throttle, yaw, pitch, roll }: ControllerDisp
       }}>
         AI Controller
       </div>
+    </div>
     </div>
   );
 }

@@ -135,7 +135,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 2px;
+  margin-top: 10px;
 }
 
 .randomizeButton:hover:not(:disabled) {
@@ -148,18 +148,24 @@
   cursor: not-allowed;
 }
 
+.formationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .formationButton {
-  width: 100%;
   padding: 10px;
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(59, 130, 246, 0.2));
   color: white;
   border: 1px solid rgba(168, 85, 247, 0.4);
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 8px;
+
 }
 
 .formationButton:hover:not(:disabled) {

@@ -15,7 +15,7 @@ import { MultiControlPanel, getQuadcopterColor } from '@/components/ui/MultiCont
 // Hooks and utilities
 import { useMultiSimulation } from '@/hooks/useMultiSimulation';
 import { threeJsQuaternionToPhysics } from '@/lib/coordinateTransform';
-import { getRandomFormation } from '@/lib/formations/formations';
+import { getRandomFormation, getFormationByName } from '@/lib/formations/formations';
 
 // Types
 import type { Vector3, Quaternion } from '@/lib/types';
@@ -142,8 +142,10 @@ export function MultiMode() {
   };
   
   // Handle formation positioning
-  const handleFormation = () => {
-    const formation = getRandomFormation(quadcopterCount);
+  const handleFormation = (formationName?: string) => {
+    const formation = formationName 
+      ? getFormationByName(formationName, quadcopterCount)
+      : getRandomFormation(quadcopterCount);
     const newQuadcopters = quadcopters.map((quad, index) => {
       const formationData = formation[index];
       if (!formationData) return quad;

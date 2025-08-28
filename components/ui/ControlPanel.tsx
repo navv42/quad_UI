@@ -67,7 +67,7 @@ export function ControlPanel({
       }}>
         <button
           onClick={handleZeroPosition}
-          disabled={isPlaying || isComputing}
+          disabled={isPlaying || isComputing || isPausedMidSimulation}
           style={{
             padding: '6px 12px',
             fontSize: '12px',
@@ -96,7 +96,7 @@ export function ControlPanel({
             step="0.01"
             value={initialX}
             onChange={(e) => setInitialX(parseFloat(e.target.value))}
-            disabled={isPlaying}
+            disabled={isPlaying || isPausedMidSimulation}
           />
         </div>
         
@@ -109,7 +109,7 @@ export function ControlPanel({
             step="0.01"
             value={initialY}
             onChange={(e) => setInitialY(parseFloat(e.target.value))}
-            disabled={isPlaying}
+            disabled={isPlaying || isPausedMidSimulation}
           />
         </div>
         
@@ -122,7 +122,7 @@ export function ControlPanel({
             step="0.01"
             value={initialZ}
             onChange={(e) => setInitialZ(parseFloat(e.target.value))}
-            disabled={isPlaying}
+            disabled={isPlaying || isPausedMidSimulation}
           />
         </div>
       </div>
@@ -140,7 +140,7 @@ export function ControlPanel({
             step="1"
             value={initialRoll}
             onChange={(e) => setInitialRoll(parseFloat(e.target.value))}
-            disabled={isPlaying}
+            disabled={isPlaying || isPausedMidSimulation}
           />
         </div>
         
@@ -153,7 +153,7 @@ export function ControlPanel({
             step="1"
             value={initialPitch}
             onChange={(e) => setInitialPitch(parseFloat(e.target.value))}
-            disabled={isPlaying}
+            disabled={isPlaying || isPausedMidSimulation}
           />
         </div>
         
@@ -166,7 +166,7 @@ export function ControlPanel({
             step="1"
             value={initialYaw}
             onChange={(e) => setInitialYaw(parseFloat(e.target.value))}
-            disabled={isPlaying}
+            disabled={isPlaying || isPausedMidSimulation}
           />
         </div>
       </div>

@@ -207,14 +207,14 @@ export function Quadcopter({
     };
   }, [isHovered, isInteractive, gl]);
   
-  // Reset animation when trajectory changes
-  useEffect(() => {
-    // Only reset time if we're starting fresh (not resuming)
-    if (state.trajectory.length > 0 && !wasPlayingRef.current) {
-      timeRef.current = 0;
-      onUpdate({ currentFrame: 0 });
-    }
-  }, [state.trajectory, onUpdate]);
+  // // Reset animation when trajectory changes
+  // useEffect(() => {
+  //   // Only reset time if we're starting fresh (not resuming)
+  //   if (state.trajectory.length > 0 && !wasPlayingRef.current) {
+  //     timeRef.current = 0;
+  //     onUpdate({ currentFrame: 0 });
+  //   }
+  // }, [state.trajectory, onUpdate]);
   
   // Handle play/pause state changes
   useEffect(() => {
